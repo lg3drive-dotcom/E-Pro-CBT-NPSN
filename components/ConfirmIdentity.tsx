@@ -1,0 +1,70 @@
+
+import React from 'react';
+import { StudentIdentity, AppSettings } from '../types';
+
+interface ConfirmIdentityProps {
+  identity: StudentIdentity;
+  settings: AppSettings;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const ConfirmIdentity: React.FC<ConfirmIdentityProps> = ({ identity, settings, onConfirm, onCancel }) => {
+  return (
+    <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-[3rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200">
+        <div className="bg-green-950 p-8 text-white text-center">
+          <h2 className="text-2xl font-black uppercase tracking-widest">Konfirmasi Data Peserta</h2>
+          <p className="text-slate-400 text-xs mt-2 font-bold italic">Periksa kembali data diri Anda sebelum memulai ujian</p>
+        </div>
+        
+        <div className="p-8 lg:p-10 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Nama Lengkap</p>
+              <p className="text-lg font-black text-slate-800 truncate">{identity.name}</p>
+            </div>
+            <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Kelas / Rombel</p>
+              <p className="text-lg font-black text-slate-800">{identity.className}</p>
+            </div>
+            <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">NPSN</p>
+              <p className="text-lg font-black text-slate-800 truncate">{identity.npsn || '-'}</p>
+            </div>
+            <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tanggal Lahir</p>
+              <p className="text-lg font-black text-slate-800">{identity.birthDate || '-'}</p>
+            </div>
+            <div className="p-5 bg-green-50 rounded-3xl border border-green-100">
+              <p className="text-[9px] font-black text-green-700 uppercase tracking-widest mb-1">Mapel</p>
+              <p className="text-lg font-black text-green-900">{settings.activeSubject || 'Ujian Digital'}</p>
+            </div>
+            <div className="p-5 bg-orange-50 rounded-3xl border border-orange-100">
+              <p className="text-[9px] font-black text-orange-400 uppercase tracking-widest mb-1">Alokasi Waktu</p>
+              <p className="text-lg font-black text-orange-700">{settings.timerMinutes} Menit</p>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex gap-4 items-start">
+            <div className="bg-amber-100 p-2 rounded-full text-amber-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <p className="text-xs text-amber-700 font-medium leading-relaxed">
+              Pastikan koneksi internet stabil. Tombol <b>MULAI</b> akan mengunci layar browser Anda ke Mode Ujian.
+            </p>
+          </div>
+
+          <div className="flex gap-4 pt-4">
+            <button onClick={onCancel} className="flex-1 py-4 font-black text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest text-[10px]">Batal</button>
+            <button onClick={onConfirm} className="flex-[2] bg-green-800 hover:bg-green-900 text-white font-black py-4 rounded-2xl shadow-xl transition-all active:scale-95 uppercase tracking-widest text-[10px]">Mulai Ujian</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ConfirmIdentity;
