@@ -597,6 +597,13 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
                               })}
                            </div>
                          )}
+
+                         {formData.explanation && (
+                           <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 mt-6">
+                             <h4 className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Pembahasan:</h4>
+                             <MathText text={formData.explanation} className="text-xs font-medium text-emerald-800 leading-relaxed" />
+                           </div>
+                         )}
                       </div>
                    </div>
                 </div>
