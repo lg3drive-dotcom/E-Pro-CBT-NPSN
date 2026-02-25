@@ -12,6 +12,13 @@ interface AiQuestionLabProps {
 const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(true);
+  const [userApiKey, setUserApiKey] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('user_gemini_api_key') || '';
+    }
+    return '';
+  });
+  const [showApiSettings, setShowApiSettings] = useState(false);
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [levelMode, setLevelMode] = useState<'bloom' | 'puspendik'>('bloom');
 
@@ -77,7 +84,8 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
       const result = await generateBatchAIQuestions(
         subject as any, material, count, type, level,
         file ? { data: file.data, mimeType: file.type } : undefined,
-        customPrompt
+        customPrompt,
+        userApiKey || undefined // Pass user API key if available
       );
       if (result) setGeneratedQuestions(prev => [...result, ...prev]);
     } catch (err: any) {
@@ -110,8 +118,58 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
     alert("File JSON siap! Silakan masuk ke Panel Admin CBT dan klik 'Upload File Backup' untuk mengimpor soal ini.");
   };
 
+  const handleSaveUserKey = (key: string) => {
+    setUserApiKey(key);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_gemini_api_key', key);
+    }
+    setShowApiSettings(false);
+  };
+
   return (
     <div className="min-h-screen bg-green-950 text-slate-200 font-inter selection:bg-green-500/30">
+      {/* API Settings Modal */}
+      {showApiSettings && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[1000] flex items-center justify-center p-4">
+          <div className="bg-green-900 border border-green-700 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl animate-in zoom-in duration-300">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-black text-white uppercase tracking-tight">Pengaturan API Key</h3>
+              <button onClick={() => setShowApiSettings(false)} className="text-slate-400 hover:text-white transition-colors">✕</button>
+            </div>
+            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+              Masukkan Gemini API Key Anda untuk menggunakan fitur AI. Kunci ini disimpan secara lokal di browser Anda.
+              Dapatkan kunci gratis di <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-green-400 underline">Google AI Studio</a>.
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Gemini API Key</label>
+                <input 
+                  type="password" 
+                  value={userApiKey}
+                  onChange={(e) => setUserApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-green-950 border border-green-800 p-4 rounded-2xl text-xs font-mono text-white outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button 
+                  onClick={() => handleSaveUserKey('')}
+                  className="flex-1 py-3 bg-red-900/30 text-red-400 font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-red-900/50 transition-all"
+                >
+                  Hapus
+                </button>
+                <button 
+                  onClick={() => handleSaveUserKey(userApiKey)}
+                  className="flex-[2] py-3 bg-green-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-green-500 shadow-lg shadow-green-900/40 transition-all"
+                >
+                  Simpan Kunci
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <nav className="border-b border-green-800 bg-green-950/80 backdrop-blur-md sticky top-0 z-50 p-6">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -124,15 +182,13 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Direct AI Engine • Export JSON Format</p>
-                {!hasApiKey && (
-                  <button 
-                    onClick={handleSelectKey}
-                    className="text-[9px] font-black text-orange-400 hover:text-orange-300 uppercase tracking-widest flex items-center gap-1 animate-pulse"
-                  >
-                    <div className="w-1 h-1 bg-orange-500 rounded-full"></div>
-                    Hubungkan API Key
-                  </button>
-                )}
+                <button 
+                  onClick={() => setShowApiSettings(true)}
+                  className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1 transition-all ${userApiKey ? 'text-green-400' : 'text-orange-400 animate-pulse'}`}
+                >
+                  <div className={`w-1 h-1 rounded-full ${userApiKey ? 'bg-green-500' : 'bg-orange-500'}`}></div>
+                  {userApiKey ? 'API Terhubung' : 'Hubungkan API Key'}
+                </button>
               </div>
             </div>
           </div>

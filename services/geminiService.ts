@@ -5,8 +5,8 @@ import { Subject, QuestionType, CognitiveLevel } from "../types.ts";
 /**
  * Menghasilkan gambar ilustrasi soal menggunakan Gemini 3 Pro Image
  */
-export const generateAIImage = async (prompt: string): Promise<string | null> => {
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+export const generateAIImage = async (prompt: string, userApiKey?: string): Promise<string | null> => {
+  const apiKey = userApiKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
@@ -43,9 +43,10 @@ export const generateBatchAIQuestions = async (
   specificType: QuestionType | 'RANDOM',
   specificLevel: string | 'RANDOM',
   fileData?: { data: string, mimeType: string },
-  customPrompt?: string
+  customPrompt?: string,
+  userApiKey?: string // Add optional user API key
 ) => {
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const apiKey = userApiKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("API_KEY_MISSING");
   }
