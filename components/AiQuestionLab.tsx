@@ -55,6 +55,8 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
       await (window as any).aistudio.openSelectKey();
       // Assume success and proceed as per guidelines
       setHasApiKey(true);
+    } else {
+      alert("API Key tidak ditemukan. Jika Anda menjalankan aplikasi ini di Vercel/hosting lain, pastikan Anda telah mengatur environment variable API_KEY di dashboard hosting Anda. Jika di AI Studio, pastikan fitur API Key sudah aktif.");
     }
   };
 
@@ -235,7 +237,11 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
                 </div>
               </div>
               
-              <button onClick={handleGenerate} disabled={isGenerating} className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-green-900/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
+              <button 
+                onClick={handleGenerate} 
+                disabled={isGenerating} 
+                className={`w-full font-black py-4 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50 ${generatedQuestions.length === 0 ? 'bg-green-600 hover:bg-green-500 animate-pulse ring-4 ring-green-500/20' : 'bg-green-700 hover:bg-green-800'}`}
+              >
                 {isGenerating ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

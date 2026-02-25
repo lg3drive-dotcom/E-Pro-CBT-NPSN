@@ -3,6 +3,11 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Question, Subject, QuestionType, CognitiveLevel } from '../types.ts';
 import { SUBJECT_LIST, BLOOM_LEVELS, PUSPENDIK_LEVELS, COGNITIVE_LEVELS } from '../constants.ts';
 import { generateQuestionBankPDF } from '../services/pdfService.ts';
+import { 
+  exportQuestionsToExcelV2, 
+  importQuestionsFromExcel, 
+  downloadQuestionTemplate 
+} from '../services/excelService.ts';
 import MathText from './MathText.tsx';
 
 interface QuestionManagerProps {
@@ -30,6 +35,7 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [pasteContent, setPasteContent] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const excelInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState<{
     text: string;
@@ -157,6 +163,32 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const handleExportExcel = () => {
+    if (processedQuestions.length === 0) {
+      alert("Tidak ada soal ditemukan untuk di-export.");
+      return;
+    }
+    const fileName = tokenFilter.trim() ? `Export_${tokenFilter.toUpperCase()}` : 'BankSoal_Semua';
+    exportQuestionsToExcelV2(processedQuestions, `EduCBT_${fileName}_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleExcelImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const imported = await importQuestionsFromExcel(file);
+      if (imported.length === 0) return alert("File Excel kosong atau tidak valid.");
+      onImportQuestions(imported);
+      alert(`Berhasil mengimpor ${imported.length} soal dari Excel.`);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal membaca file Excel. Pastikan format kolom sesuai template.");
+    }
+    
+    if (excelInputRef.current) excelInputRef.current.value = '';
+  };
+
   /**
    * Fungsi untuk mengubah teks matematika biasa menjadi LaTeX secara cerdas.
    */
@@ -253,6 +285,8 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
           
           <div className="flex gap-1 border-l pl-3 ml-2 border-slate-300">
              <input type="file" ref={fileInputRef} onChange={handleFileImport} className="hidden" accept=".json" />
+             <input type="file" ref={excelInputRef} onChange={handleExcelImport} className="hidden" accept=".xlsx, .xls" />
+             
              <button onClick={() => fileInputRef.current?.click()} className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors" title="Upload JSON">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
              </button>
@@ -261,6 +295,18 @@ const QuestionManager: React.FC<QuestionManagerProps> = ({
              </button>
              <button onClick={handleExportJSON} className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors" title="Export JSON">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+             </button>
+
+             <div className="w-px h-4 bg-slate-200 mx-1 self-center"></div>
+
+             <button onClick={downloadQuestionTemplate} className="p-2 hover:bg-green-100 rounded-lg text-green-600 transition-colors" title="Download Template Excel">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z" /></svg>
+             </button>
+             <button onClick={() => excelInputRef.current?.click()} className="p-2 hover:bg-green-100 rounded-lg text-green-600 transition-colors" title="Import Excel">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+             </button>
+             <button onClick={handleExportExcel} className="p-2 hover:bg-green-100 rounded-lg text-green-600 transition-colors" title="Export Excel">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
              </button>
           </div>
         </div>

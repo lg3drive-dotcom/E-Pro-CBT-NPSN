@@ -1,8 +1,13 @@
 
-import { Question, QuestionType } from '../types';
+import { Question, QuestionType, Subject } from '../types';
 import * as XLSX from 'xlsx';
 
 const indexToAlpha = (idx: number) => String.fromCharCode(65 + idx);
+const alphaToIndex = (alpha: string) => {
+  const clean = alpha.trim().toUpperCase();
+  if (!clean) return -1;
+  return clean.charCodeAt(0) - 65;
+};
 
 const formatCorrectAnswer = (q: Question): string => {
   if (q.type === QuestionType.SINGLE) {
@@ -28,6 +33,28 @@ const formatCorrectAnswer = (q: Question): string => {
   }
   
   return String(q.correctAnswer || '-');
+};
+
+const parseCorrectAnswer = (type: QuestionType, val: string): any => {
+  if (!val) return null;
+  const str = val.toString().trim().toUpperCase();
+
+  if (type === QuestionType.SINGLE) {
+    return alphaToIndex(str);
+  }
+
+  if (type === QuestionType.MULTIPLE) {
+    return str.split(/[,;]/).map(s => alphaToIndex(s.trim())).filter(idx => idx >= 0);
+  }
+
+  if (type === QuestionType.MATCH || type === QuestionType.TRUE_FALSE) {
+    return str.split(/[,;]/).map(s => {
+      const char = s.trim()[0];
+      return char === 'B' || char === 'T' || char === 'Y'; // Benar, True, Yes
+    });
+  }
+
+  return val;
 };
 
 const checkCorrectness = (q: Question, studentAnswer: any): boolean => {
@@ -125,44 +152,109 @@ export const exportMultiSheetAnalysis = (submissions: any[], questions: Question
   XLSX.writeFile(wb, `${fileName}.xlsx`);
 };
 
-export const exportQuestionsToExcel = (questions: Question[], fileName: string) => {
-  if (questions.length === 0) return;
+// --- NEW EXCEL V2 FUNCTIONS (MATCHING USER IMAGE) ---
 
-  const headers = [
-    'No', 'Tipe Soal', 'Level', 'Materi', 'Teks Soal', 'Gambar Soal (URL)',
-    'Opsi A', 'Gambar Opsi A (URL)', 'Opsi B', 'Gambar Opsi B (URL)',
-    'Opsi C', 'Gambar Opsi C (URL)', 'Opsi D', 'Gambar Opsi D (URL)',
-    'Opsi E', 'Gambar Opsi E (URL)', 'Kunci Jawaban', 'Pembahasan', 'Token Paket'
-  ];
+const EXCEL_HEADERS = [
+  'No', 'ID Soal', 'Tipe', 'Level', 'Butir Pertanyaan', 'Gambar Soal',
+  'Opsi A', 'Gambar Opsi A', 'Opsi B', 'Gambar Opsi B', 
+  'Opsi C', 'Gambar Opsi C', 'Opsi D', 'Gambar Opsi D', 
+  'Opsi E', 'Gambar Opsi E', 'Kunci Jawaban', 'Pembahasan', 'Token', 'Mata Pelajaran'
+];
 
+export const downloadQuestionTemplate = () => {
+  const wsData = [EXCEL_HEADERS];
+  // Add example row
+  wsData.push([
+    '1', 'SOAL-001', 'SINGLE', 'L1', 'Apa ibukota Indonesia?', '',
+    'Jakarta', '', 'Bandung', '', 'Surabaya', '', 'Medan', '', 'Makassar', '',
+    'A', 'Jakarta adalah ibukota negara.', 'TOKEN123', 'PANCASILA'
+  ]);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, "Template");
+  XLSX.writeFile(wb, "Template_Impor_Soal_EPRO.xlsx");
+};
+
+export const exportQuestionsToExcelV2 = (questions: Question[], fileName: string) => {
   const rows = questions.map((q, idx) => {
     const options = q.options || [];
     const optImages = q.optionImages || [];
     return [
-      q.order || idx + 1,
+      (idx + 1).toString(),
+      q.id,
       q.type,
       q.level || '-',
-      (q.material || '-').replace(/;/g, ','),
-      (q.text || '').replace(/;/g, ','),
+      q.text,
       q.questionImage || '',
-      (options[0] || '').replace(/;/g, ','), optImages[0] || '',
-      (options[1] || '').replace(/;/g, ','), optImages[1] || '',
-      (options[2] || '').replace(/;/g, ','), optImages[2] || '',
-      (options[3] || '').replace(/;/g, ','), optImages[3] || '',
-      (options[4] || '').replace(/;/g, ','), optImages[4] || '',
+      options[0] || '', optImages[0] || '',
+      options[1] || '', optImages[1] || '',
+      options[2] || '', optImages[2] || '',
+      options[3] || '', optImages[3] || '',
+      options[4] || '', optImages[4] || '',
       formatCorrectAnswer(q),
-      (q.explanation || '').replace(/;/g, ','),
-      (q.quizToken || '-')
-    ].join(';');
+      q.explanation || '',
+      q.quizToken || '',
+      q.subject || ''
+    ];
   });
 
-  const csvContent = "sep=;\n" + "\uFEFF" + headers.join(';') + '\n' + rows.join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${fileName}.csv`);
-  link.click();
+  const wsData = [EXCEL_HEADERS, ...rows];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, "Data Soal");
+  XLSX.writeFile(wb, `${fileName}.xlsx`);
+};
+
+export const importQuestionsFromExcel = (file: File): Promise<Question[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData: any[][] = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+        if (jsonData.length < 2) return resolve([]);
+
+        const questions: Question[] = [];
+        // Skip header row
+        for (let i = 1; i < jsonData.length; i++) {
+          const row = jsonData[i];
+          if (!row || row.length < 5) continue;
+
+          const type = (row[2] || 'SINGLE').toString().toUpperCase() as QuestionType;
+          const options = [row[6], row[8], row[10], row[12], row[14]].map(v => v?.toString() || '').filter(v => v !== '');
+          const optionImages = [row[7], row[9], row[11], row[13], row[15]].map(v => v?.toString() || '');
+
+          const q: Question = {
+            id: row[1]?.toString() || `Q-${Date.now()}-${i}`,
+            type,
+            level: row[3]?.toString() || 'L1',
+            text: row[4]?.toString() || '',
+            material: '', // Default empty material
+            questionImage: row[5]?.toString() || '',
+            options: options.length > 0 ? options : undefined,
+            optionImages: optionImages.some(v => v !== '') ? optionImages : undefined,
+            correctAnswer: parseCorrectAnswer(type, row[16]?.toString() || ''),
+            explanation: row[17]?.toString() || '',
+            quizToken: row[18]?.toString() || '',
+            subject: row[19]?.toString() || Subject.PANCASILA,
+            isDeleted: false,
+            createdAt: Date.now(),
+            order: i
+          };
+          questions.push(q);
+        }
+        resolve(questions);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 };
 
 export const exportSubmissionsToExcel = (submissions: any[], fileName: string, questionBank: Question[] = []) => {
