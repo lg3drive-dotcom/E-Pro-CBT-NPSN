@@ -6,12 +6,13 @@ import { Subject, QuestionType, CognitiveLevel } from "../types.ts";
  * Menghasilkan gambar ilustrasi soal menggunakan Gemini 3 Pro Image
  */
 export const generateAIImage = async (prompt: string): Promise<string | null> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key sistem tidak ditemukan. Hubungi administrator.");
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY_MISSING");
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
       contents: {
@@ -44,11 +45,12 @@ export const generateBatchAIQuestions = async (
   fileData?: { data: string, mimeType: string },
   customPrompt?: string
 ) => {
-  if (!process.env.API_KEY) {
-    throw new Error("API Key sistem tidak ditemukan. Hubungi administrator.");
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY_MISSING");
   }
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   // Tentukan apakah menggunakan sistem Bloom atau Puspendik berdasarkan level input
   const isPuspendikInput = specificLevel.startsWith("Level");

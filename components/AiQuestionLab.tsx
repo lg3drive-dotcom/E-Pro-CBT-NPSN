@@ -11,8 +11,13 @@ interface AiQuestionLabProps {
 
 const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(true);
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[]>([]);
   const [levelMode, setLevelMode] = useState<'bloom' | 'puspendik'>('bloom');
+
+  React.useEffect(() => {
+    checkApiKey();
+  }, []);
   
   // AI Config States
   const [subject, setSubject] = useState<string>(Subject.PANCASILA);
@@ -36,21 +41,49 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
     reader.readAsDataURL(file);
   };
 
+  const checkApiKey = async () => {
+    if (typeof window !== 'undefined' && (window as any).aistudio) {
+      const selected = await (window as any).aistudio.hasSelectedApiKey();
+      setHasApiKey(selected);
+      return selected;
+    }
+    return true;
+  };
+
+  const handleSelectKey = async () => {
+    if (typeof window !== 'undefined' && (window as any).aistudio) {
+      await (window as any).aistudio.openSelectKey();
+      // Assume success and proceed as per guidelines
+      setHasApiKey(true);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!material && !file) return alert("Berikan materi atau upload file acuan.");
     if (!subject) return alert("Pilih atau ketik mata pelajaran.");
     
+    const keyOk = await checkApiKey();
+    if (!keyOk) {
+      if (confirm("API Key belum terhubung. Buka pengaturan API Key sekarang?")) {
+        handleSelectKey();
+      }
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const result = await generateBatchAIQuestions(
         subject as any, material, count, type, level,
-        // Fix: Removed 'name' and renamed 'type' to 'mimeType' to match the expected structure of fileData in generateBatchAIQuestions.
         file ? { data: file.data, mimeType: file.type } : undefined,
         customPrompt
       );
       if (result) setGeneratedQuestions(prev => [...result, ...prev]);
     } catch (err: any) {
-      alert(`Error: ${err.message || "Gagal menghubungi AI. Pastikan server memiliki akses API yang valid."}`);
+      if (err.message === "API_KEY_MISSING") {
+        handleSelectKey();
+      } else {
+        alert(`Error: ${err.message || "Gagal menghubungi AI. Pastikan server memiliki akses API yang valid."}`);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -87,7 +120,18 @@ const AiQuestionLab: React.FC<AiQuestionLabProps> = ({ onBack, onImport }) => {
               <h1 className="text-xl font-black text-white tracking-tighter flex items-center gap-2">
                 <span className="bg-green-600 px-2 py-0.5 rounded text-xs uppercase">Lab</span> E-Pro CBT AI Question Generator
               </h1>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Direct AI Engine • Export JSON Format</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Direct AI Engine • Export JSON Format</p>
+                {!hasApiKey && (
+                  <button 
+                    onClick={handleSelectKey}
+                    className="text-[9px] font-black text-orange-400 hover:text-orange-300 uppercase tracking-widest flex items-center gap-1 animate-pulse"
+                  >
+                    <div className="w-1 h-1 bg-orange-500 rounded-full"></div>
+                    Hubungkan API Key
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-4">
