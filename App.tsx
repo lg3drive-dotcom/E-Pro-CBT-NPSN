@@ -511,7 +511,8 @@ const App: React.FC = () => {
                      href={currentLinks.aiAnalysis} 
                      target="_blank" 
                      rel="noopener noreferrer"
-                     className="w-full inline-flex items-center justify-center gap-3 bg-linear-to-r from-[#8b5cf6] to-[#3b82f6] hover:from-[#7c3aed] hover:to-[#2563eb] text-white font-black py-6 px-10 rounded-[2.5rem] shadow-xl shadow-indigo-500/40 transition-all active:scale-95 text-sm uppercase tracking-[0.2em]"
+                     style={{ background: 'linear-gradient(90deg, #7c3aed 0%, #2563eb 100%)' }}
+                     className="w-full inline-flex items-center justify-center gap-3 text-white font-black py-6 px-10 rounded-[2.5rem] shadow-2xl shadow-indigo-500/50 transition-all active:scale-95 text-sm uppercase tracking-[0.2em]"
                    >
                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                      Buka Dashboard Analisis AI Studio
